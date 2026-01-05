@@ -91,6 +91,20 @@ function App() {
     }
   };
 
+  const toggleProductActive = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/products/${id}/toggle-active`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        loadData();
+      }
+    } catch (err) {
+      console.error('Error toggling product status:', err);
+    }
+  };
+
   const completeSale = async (saleData) => {
     try {
       const res = await fetch(`${API_URL}/sales`, {
@@ -173,11 +187,12 @@ function App() {
                   onAdd={addProduct}
                   onUpdate={updateProduct}
                   onDelete={deleteProduct}
+                  onToggleActive={toggleProductActive}
                 />
               )}
               {activeTab === 'pos' && (
                 <POS 
-                  products={products}
+                  products={products.filter(p => p.active)}
                   cart={cart}
                   setCart={setCart}
                   onComplete={completeSale}
@@ -278,7 +293,7 @@ function StatCard({ title, value, color }) {
   );
 }
 
-function Inventory({ products, onAdd, onUpdate, onDelete }) {
+function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -433,24 +448,53 @@ function Inventory({ products, onAdd, onUpdate, onDelete }) {
               </thead>
               <tbody>
                 {products.map(product => (
-                  <tr key={product.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <tr 
+                    key={product.id} 
+                    style={{ 
+                      borderBottom: '1px solid #f0f0f0',
+                      opacity: product.active ? 1 : 0.5,
+                      background: product.active ? 'transparent' : '#f9f9f9'
+                    }}
+                  >
                     <td style={{ padding: '0.75rem' }}>{product.sku}</td>
-                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>{product.name}</td>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>
+                      {product.name}
+                      {!product.active && (
+                        <span style={{ 
+                          marginLeft: '0.5rem', 
+                          color: '#999', 
+                          fontSize: '0.875rem',
+                          fontStyle: 'italic'
+                        }}>
+                          (Inactive)
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '0.75rem' }}>{product.category || '-'}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'right' }}>${product.price.toFixed(2)}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>{product.quantity}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                      {product.low_stock && (
+                      {product.low_stock && product.active && (
                         <span style={{
                           background: '#ff6b6b',
                           color: 'white',
                           padding: '0.25rem 0.75rem',
                           borderRadius: '12px',
-                          fontSize: '0.875rem'
+                          fontSize: '0.875rem',
+                          marginRight: '0.5rem'
                         }}>
                           Low Stock
                         </span>
                       )}
+                      <span style={{
+                        background: product.active ? '#43e97b' : '#999',
+                        color: 'white',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.875rem'
+                      }}>
+                        {product.active ? 'Active' : 'Inactive'}
+                      </span>
                     </td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                       <button
@@ -467,6 +511,21 @@ function Inventory({ products, onAdd, onUpdate, onDelete }) {
                         }}
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => onToggleActive(product.id)}
+                        style={{
+                          background: product.active ? '#f093fb' : '#43e97b',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          marginRight: '0.5rem',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        {product.active ? 'Deactivate' : 'Activate'}
                       </button>
                       <button
                         onClick={() => onDelete(product.id)}

@@ -15,6 +15,7 @@ class Product(db.Model):
     quantity = db.Column(db.Integer, default=0)
     min_stock = db.Column(db.Integer, default=5)
     category = db.Column(db.String(100))
+    active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -31,6 +32,7 @@ class Product(db.Model):
             'quantity': self.quantity,
             'min_stock': self.min_stock,
             'category': self.category,
+            'active': self.active,
             'low_stock': self.quantity <= self.min_stock,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

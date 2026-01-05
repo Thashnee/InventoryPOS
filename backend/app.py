@@ -76,12 +76,20 @@ def delete_product(id):
     # Check if product has been sold
     if product.sales:
         return jsonify({
-            'error': 'Cannot delete product that has been sold. Consider marking it as inactive instead.'
+            'error': 'Cannot delete product that has been sold. Use the toggle to mark it as inactive instead.'
         }), 400
     
     db.session.delete(product)
     db.session.commit()
     return '', 204
+
+# Toggle product active status
+@app.route('/api/products/<int:id>/toggle-active', methods=['PUT'])
+def toggle_product_active(id):
+    product = Product.query.get_or_404(id)
+    product.active = not product.active
+    db.session.commit()
+    return jsonify(product.to_dict())
 
 # Sales endpoints
 @app.route('/api/sales', methods=['GET'])
