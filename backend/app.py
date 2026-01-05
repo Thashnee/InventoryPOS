@@ -72,6 +72,13 @@ def update_product(id):
 @app.route('/api/products/<int:id>', methods=['DELETE'])
 def delete_product(id):
     product = Product.query.get_or_404(id)
+    
+    # Check if product has been sold
+    if product.sales:
+        return jsonify({
+            'error': 'Cannot delete product that has been sold. Consider marking it as inactive instead.'
+        }), 400
+    
     db.session.delete(product)
     db.session.commit()
     return '', 204

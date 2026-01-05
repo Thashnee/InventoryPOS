@@ -75,12 +75,19 @@ function App() {
   };
 
   const deleteProduct = async (id) => {
-    if (!confirm('Delete this product?')) return;
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     try {
       const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-      if (res.ok) loadData();
+      if (res.ok) {
+        loadData();
+        alert('Product deleted successfully!');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete product');
+      }
     } catch (err) {
       console.error('Error deleting product:', err);
+      alert('Error deleting product');
     }
   };
 
@@ -490,7 +497,6 @@ function Inventory({ products, onAdd, onUpdate, onDelete }) {
 function POS({ products, cart, setCart, onComplete }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [discount, setDiscount] = useState(0);
   const [tax, setTax] = useState(0);
 
   const addToCart = (product) => {
@@ -522,7 +528,7 @@ function POS({ products, cart, setCart, onComplete }) {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal - discount + tax;
+  const total = subtotal + tax;
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -533,7 +539,7 @@ function POS({ products, cart, setCart, onComplete }) {
     const saleData = {
       customer_name: customerName,
       items: cart,
-      discount,
+      discount: 0,
       tax,
       payment_method: 'cash'
     };
@@ -541,7 +547,6 @@ function POS({ products, cart, setCart, onComplete }) {
     const sale = await onComplete(saleData);
     if (sale) {
       setCustomerName('');
-      setDiscount(0);
       setTax(0);
     }
   };
@@ -678,22 +683,17 @@ function POS({ products, cart, setCart, onComplete }) {
             placeholder="Customer name (optional)"
             value={customerName}
             onChange={e => setCustomerName(e.target.value)}
-            style={{...inputStyle, width: '100%', marginBottom: '0.5rem'}}
+            style={{...inputStyle, width: '100%', marginBottom: '1rem'}}
           />
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+              Tax Amount
+            </label>
             <input
               type="number"
               step="0.01"
-              placeholder="Discount"
-              value={discount}
-              onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-              style={inputStyle}
-            />
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Tax"
+              placeholder="0.00"
               value={tax}
               onChange={e => setTax(parseFloat(e.target.value) || 0)}
               style={inputStyle}
@@ -704,10 +704,6 @@ function POS({ products, cart, setCart, onComplete }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <span>Subtotal:</span>
               <span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#ff6b6b' }}>
-              <span>Discount:</span>
-              <span>-${discount.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <span>Tax:</span>
