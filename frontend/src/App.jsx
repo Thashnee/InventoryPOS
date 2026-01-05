@@ -296,6 +296,7 @@ function StatCard({ title, value, color }) {
 function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '', sku: '', description: '', price: '', cost: '', quantity: '', min_stock: '', category: ''
   });
@@ -319,6 +320,16 @@ function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
     setShowForm(true);
   };
 
+  // Filter products based on search term
+  const filteredProducts = products.filter(product => {
+    const search = searchTerm.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(search) ||
+      product.sku.toLowerCase().includes(search) ||
+      (product.category && product.category.toLowerCase().includes(search))
+    );
+  });
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -335,6 +346,27 @@ function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
         }}>
           {showForm ? 'Cancel' : '+ Add Product'}
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <input
+          type="text"
+          placeholder="🔍 Search by name, SKU, or category..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{
+            ...inputStyle,
+            width: '100%',
+            fontSize: '1rem',
+            padding: '0.875rem 1rem'
+          }}
+        />
+        {searchTerm && (
+          <div style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.875rem' }}>
+            Found {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {showForm && (
@@ -428,9 +460,9 @@ function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
       )}
 
       <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        {products.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>
-            No products yet. Add your first product to get started!
+            {searchTerm ? `No products found matching "${searchTerm}"` : 'No products yet. Add your first product to get started!'}
           </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -447,7 +479,7 @@ function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
                 </tr>
               </thead>
               <tbody>
-                {products.map(product => (
+                {filteredProducts.map(product => (
                   <tr 
                     key={product.id} 
                     style={{ 
