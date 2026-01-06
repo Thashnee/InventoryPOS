@@ -238,7 +238,7 @@ function Dashboard({ stats }) {
         <StatCard title="Total Products" value={stats.total_products} color="#667eea" />
         <StatCard title="Low Stock Items" value={stats.low_stock_count} color="#f093fb" />
         <StatCard title="Total Sales" value={stats.total_sales} color="#4facfe" />
-        <StatCard title="Total Revenue" value={`$${stats.total_revenue.toFixed(2)}`} color="#43e97b" />
+        <StatCard title="Total Revenue" value={stats.total_revenue} color="#43e97b" />
       </div>
 
       <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
@@ -262,7 +262,7 @@ function Dashboard({ stats }) {
                     <td style={{ padding: '0.75rem' }}>{sale.invoice_number}</td>
                     <td style={{ padding: '0.75rem' }}>{sale.customer_name || 'Walk-in'}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600' }}>
-                      ${sale.total.toFixed(2)}
+                      R{sale.total.toFixed(2)}
                     </td>
                     <td style={{ padding: '0.75rem' }}>
                       {new Date(sale.created_at).toLocaleDateString()}
@@ -503,7 +503,7 @@ function Inventory({ products, onAdd, onUpdate, onDelete, onToggleActive }) {
                       )}
                     </td>
                     <td style={{ padding: '0.75rem' }}>{product.category || '-'}</td>
-                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>${product.price.toFixed(2)}</td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>R{product.price.toFixed(2)}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>{product.quantity}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                       {product.low_stock && product.active && (
@@ -686,7 +686,7 @@ function POS({ products, cart, setCart, onComplete }) {
                 SKU: {product.sku}
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
-                ${product.price.toFixed(2)}
+                R{product.price.toFixed(2)}
               </div>
               <div style={{ color: '#999', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                 Stock: {product.quantity}
@@ -726,7 +726,7 @@ function POS({ products, cart, setCart, onComplete }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600' }}>{item.name}</div>
                   <div style={{ color: '#999', fontSize: '0.875rem' }}>
-                    ${item.price.toFixed(2)} each
+                    R{item.price.toFixed(2)} each
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -760,7 +760,7 @@ function POS({ products, cart, setCart, onComplete }) {
                     +
                   </button>
                   <div style={{ width: '80px', textAlign: 'right', fontWeight: '600' }}>
-                    ${(item.price * item.quantity).toFixed(2)}
+                    R{(item.price * item.quantity).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -794,11 +794,11 @@ function POS({ products, cart, setCart, onComplete }) {
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>R{subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <span>Tax:</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>R{tax.toFixed(2)}</span>
             </div>
             <div style={{
               display: 'flex',
@@ -809,7 +809,7 @@ function POS({ products, cart, setCart, onComplete }) {
               borderTop: '2px solid #e0e0e0'
             }}>
               <span>Total:</span>
-              <span style={{ color: '#667eea' }}>${total.toFixed(2)}</span>
+              <span style={{ color: '#667eea' }}>R{total.toFixed(2)}</span>
             </div>
           </div>
 
@@ -864,7 +864,7 @@ function Sales({ sales, onDownload }) {
                     <td style={{ padding: '0.75rem' }}>{sale.customer_name || 'Walk-in'}</td>
                     <td style={{ padding: '0.75rem' }}>{sale.payment_method}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600' }}>
-                      ${sale.total.toFixed(2)}
+                      R{sale.total.toFixed(2)}
                     </td>
                     <td style={{ padding: '0.75rem' }}>
                       {new Date(sale.created_at).toLocaleString()}
