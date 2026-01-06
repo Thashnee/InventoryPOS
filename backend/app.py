@@ -162,28 +162,98 @@ def generate_invoice(id):
     
     # Create PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     styles = getSampleStyleSheet()
     
-    # Title
-    title = Paragraph(f"<b>INVOICE {sale.invoice_number}</b>", styles['Title'])
-    elements.append(title)
+    # Define custom colors
+    from reportlab.lib.colors import HexColor
+    primary_color = HexColor('#667eea')
+    
+    # Company Details
+    COMPANY_NAME = "C.V. JOINT MAC"
+    ADDRESS_LINE1 = "Shop 10, Peters Road"
+    ADDRESS_LINE2 = "Springfield Park"
+    EMAIL = "cvjointmac@gmail.com"
+    TEL = "(031) 577 6049"
+    AFTER_HOURS = "082 931 1198"
+    FAX = "086 2733 861"
+    
+    # Invoice Number - Centered at top
+    invoice_style = styles['Title'].clone('InvoiceTitle')
+    invoice_style.fontSize = 20
+    invoice_style.textColor = primary_color
+    invoice_style.alignment = 1  # Center
+    invoice_title = Paragraph(f"<b>INVOICE #{sale.invoice_number}</b>", invoice_style)
+    elements.append(invoice_title)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # CV Joint Graphic Placeholder (centered)
+    logo_style = styles['Normal'].clone('LogoStyle')
+    logo_style.alignment = 1  # Center
+    logo_style.fontSize = 16
+    logo_style.textColor = primary_color
+    logo_placeholder = Paragraph("[ CV JOINT GRAPHIC ]", logo_style)
+    elements.append(logo_placeholder)
+    elements.append(Spacer(1, 0.15*inch))
+    
+    # Company Name - Centered
+    company_style = styles['Heading1'].clone('CompanyStyle')
+    company_style.alignment = 1  # Center
+    company_style.fontSize = 18
+    company_style.textColor = primary_color
+    company_name = Paragraph(f"<b>{COMPANY_NAME}</b>", company_style)
+    elements.append(company_name)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Sale info
-    info_data = [
-        ['Date:', sale.created_at.strftime('%Y-%m-%d %H:%M')],
-        ['Customer:', sale.customer_name or 'Walk-in Customer'],
-        ['Payment:', sale.payment_method.title()],
+    # Address and Contact Info - Two columns
+    contact_data = [
+        [
+            Paragraph(f"{ADDRESS_LINE1}<br/>{ADDRESS_LINE2}<br/>{EMAIL}", styles['Normal']),
+            Paragraph(f"<b>Tel:</b> {TEL}<br/><b>A/h:</b> {AFTER_HOURS}<br/><b>Fax:</b> {FAX}<br/><b>Date:</b> {sale.created_at.strftime('%Y-%m-%d')}", styles['Normal'])
+        ]
     ]
-    info_table = Table(info_data, colWidths=[1.5*inch, 4*inch])
-    info_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
+    contact_table = Table(contact_data, colWidths=[3.5*inch, 3*inch])
+    contact_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
     ]))
-    elements.append(info_table)
+    elements.append(contact_table)
     elements.append(Spacer(1, 0.3*inch))
+    
+    # Divider line
+    from reportlab.platypus import HRFlowable
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Vehicle Details Section
+    vehicle_header = Paragraph("<b>VEHICLE DETAILS:</b>", styles['Heading3'])
+    elements.append(vehicle_header)
+    elements.append(Spacer(1, 0.1*inch))
+    
+    vehicle_lines = [
+        [Paragraph("Make: _________________________________", styles['Normal']), 
+         Paragraph("Model: _________________________________", styles['Normal'])],
+        [Paragraph("Mileage: _______________________________", styles['Normal']), 
+         Paragraph("Other: _________________________________", styles['Normal'])]
+    ]
+    vehicle_table = Table(vehicle_lines, colWidths=[3.25*inch, 3.25*inch])
+    vehicle_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(vehicle_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Divider line
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Customer Info
+    if sale.customer_name:
+        customer_para = Paragraph(f"<b>CUSTOMER:</b> {sale.customer_name}", styles['Normal'])
+        elements.append(customer_para)
+        elements.append(Spacer(1, 0.2*inch))
     
     # Items table
     items_data = [['Item', 'Qty', 'Price', 'Subtotal']]
@@ -191,19 +261,23 @@ def generate_invoice(id):
         items_data.append([
             item.product.name,
             str(item.quantity),
-            f'${item.price:.2f}',
-            f'${item.subtotal:.2f}'
+            f'R {item.price:.2f}',
+            f'R {item.subtotal:.2f}'
         ])
     
-    items_table = Table(items_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
+    items_table = Table(items_data, colWidths=[3*inch, 1*inch, 1.25*inch, 1.25*inch])
     items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, HexColor('#f9f9f9')])
     ]))
     elements.append(items_table)
     elements.append(Spacer(1, 0.3*inch))
@@ -211,19 +285,41 @@ def generate_invoice(id):
     # Totals
     subtotal = sum(item.subtotal for item in sale.items)
     totals_data = [
-        ['Subtotal:', f'${subtotal:.2f}'],
-        ['Discount:', f'-${sale.discount:.2f}'],
-        ['Tax:', f'${sale.tax:.2f}'],
-        ['Total:', f'${sale.total:.2f}']
+        ['', '', 'Subtotal:', f'R {subtotal:.2f}'],
+        ['', '', 'Tax:', f'R {sale.tax:.2f}'],
+        ['', '', '', ''],
+        ['', '', 'TOTAL:', f'R {sale.total:.2f}']
     ]
-    totals_table = Table(totals_data, colWidths=[5*inch, 2*inch])
+    totals_table = Table(totals_data, colWidths=[3*inch, 1*inch, 1.25*inch, 1.25*inch])
     totals_table.setStyle(TableStyle([
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, -1), (-1, -1), 12),
-        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.black),
+        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (2, 3), (-1, 3), 'Helvetica-Bold'),
+        ('FONTSIZE', (2, 3), (-1, 3), 12),
+        ('LINEABOVE', (2, 3), (-1, 3), 2, colors.black),
+        ('TOPPADDING', (2, 3), (-1, 3), 10),
     ]))
     elements.append(totals_table)
+    elements.append(Spacer(1, 0.4*inch))
+    
+    # Divider line
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.grey))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Terms and Conditions
+    fine_print_text = """
+    <b>TERMS AND CONDITIONS:</b><br/>
+    1. No guarantee on C.V. Joint, if C.V. Boot is tampered with, broken or burst.<br/>
+    2. No guarantee on C.V. Joint if there is any defects relating to C.V. Joint.<br/>
+    3. We are not liable for any cost on C.V. Joints taken elsewhere during the guarantee period.<br/>
+    4. Goods remain the property of the seller until paid for in full.<br/>
+    5. Conditions of guarantee understood and goods received in good working order.<br/>
+    6. We are not liable for any towing costs.
+    """
+    fine_print_style = styles['Normal'].clone('FinePrint')
+    fine_print_style.fontSize = 8
+    fine_print_style.leading = 10
+    fine_print = Paragraph(fine_print_text, fine_print_style)
+    elements.append(fine_print)
     
     # Build PDF
     doc.build(elements)
