@@ -229,14 +229,14 @@ function LoginPage({ onLogin }) {
           </button>
         </form>
 
-        <p style={{
+{/*         <p style={{
           marginTop: '1.5rem',
           textAlign: 'center',
           fontSize: '0.75rem',
           color: '#999'
         }}>
           Default: admin / admin123
-        </p>
+        </p> */}
       </div>
     </div>
   );
