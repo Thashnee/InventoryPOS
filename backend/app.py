@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, session
 from flask_cors import CORS
-from models import db, Product, Sale, SaleItem
+from models import db, Product, Sale, SaleItem, User
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_bcrypt import Bcrypt
 from datetime import datetime
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
@@ -11,31 +13,94 @@ from reportlab.lib.units import inch
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
-# Database configuration
+# Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://inventory_user:inventory_pass@localhost:5432/inventory_db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 db.init_app(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 
-# Initialize database
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Initialize database and create default user
 with app.app_context():
     db.create_all()
+    
+    # Create default user if none exists
+    if User.query.count() == 0:
+        default_password = os.getenv('DEFAULT_PASSWORD', 'admin123')
+        hashed_password = bcrypt.generate_password_hash(default_password).decode('utf-8')
+        default_user = User(username='admin', password_hash=hashed_password)
+        db.session.add(default_user)
+        db.session.commit()
+        print(f"Default user created - Username: admin, Password: {default_password}")
+    
     print("Database initialized!")
+
+# Authentication endpoints
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    user = User.query.filter_by(username=username).first()
+    
+    if user and bcrypt.check_password_hash(user.password_hash, password):
+        login_user(user)
+        return jsonify({'message': 'Login successful', 'user': user.to_dict()}), 200
+    
+    return jsonify({'error': 'Invalid username or password'}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logged out successfully'}), 200
+
+@app.route('/api/auth/check', methods=['GET'])
+def check_auth():
+    if current_user.is_authenticated:
+        return jsonify({'authenticated': True, 'user': current_user.to_dict()}), 200
+    return jsonify({'authenticated': False}), 200
+
+@app.route('/api/auth/change-password', methods=['POST'])
+@login_required
+def change_password():
+    data = request.json
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    
+    if not bcrypt.check_password_hash(current_user.password_hash, current_password):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+    
+    current_user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    db.session.commit()
+    
+    return jsonify({'message': 'Password changed successfully'}), 200
 
 # Product endpoints
 @app.route('/api/products', methods=['GET'])
+@login_required
 def get_products():
     products = Product.query.all()
     return jsonify([p.to_dict() for p in products])
 
 @app.route('/api/products/<int:id>', methods=['GET'])
+@login_required
 def get_product(id):
     product = Product.query.get_or_404(id)
     return jsonify(product.to_dict())
 
 @app.route('/api/products', methods=['POST'])
+@login_required
 def create_product():
     data = request.json
     product = Product(
@@ -53,6 +118,7 @@ def create_product():
     return jsonify(product.to_dict()), 201
 
 @app.route('/api/products/<int:id>', methods=['PUT'])
+@login_required
 def update_product(id):
     product = Product.query.get_or_404(id)
     data = request.json
@@ -70,6 +136,7 @@ def update_product(id):
     return jsonify(product.to_dict())
 
 @app.route('/api/products/<int:id>', methods=['DELETE'])
+@login_required
 def delete_product(id):
     product = Product.query.get_or_404(id)
     
@@ -85,6 +152,7 @@ def delete_product(id):
 
 # Toggle product active status
 @app.route('/api/products/<int:id>/toggle-active', methods=['PUT'])
+@login_required
 def toggle_product_active(id):
     product = Product.query.get_or_404(id)
     product.active = not product.active
@@ -93,16 +161,19 @@ def toggle_product_active(id):
 
 # Sales endpoints
 @app.route('/api/sales', methods=['GET'])
+@login_required
 def get_sales():
     sales = Sale.query.order_by(Sale.created_at.desc()).all()
     return jsonify([s.to_dict() for s in sales])
 
 @app.route('/api/sales/<int:id>', methods=['GET'])
+@login_required
 def get_sale(id):
     sale = Sale.query.get_or_404(id)
     return jsonify(sale.to_dict(include_items=True))
 
 @app.route('/api/sales', methods=['POST'])
+@login_required
 def create_sale():
     data = request.json
     
@@ -157,6 +228,7 @@ def create_sale():
     return jsonify(sale.to_dict(include_items=True)), 201
 
 @app.route('/api/sales/<int:id>/invoice', methods=['GET'])
+@login_required
 def generate_invoice(id):
     sale = Sale.query.get_or_404(id)
     
@@ -383,6 +455,7 @@ def generate_invoice(id):
 
 # Dashboard stats
 @app.route('/api/dashboard/stats', methods=['GET'])
+@login_required
 def get_dashboard_stats():
     total_products = Product.query.count()
     low_stock_count = Product.query.filter(Product.quantity <= Product.min_stock).count()
