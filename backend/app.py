@@ -361,6 +361,14 @@ def generate_invoice(id):
     fine_print_style.textColor = dark_gray
     fine_print = Paragraph(fine_print_text, fine_print_style)
     elements.append(fine_print)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Signature line
+    sig_style = styles['Normal'].clone('SigStyle')
+    sig_style.fontSize = 10
+    sig_style.textColor = dark_gray
+    sig_line = Paragraph(f"Signature: {'_' * 60}", sig_style)
+    elements.append(sig_line)
     
     # Build PDF
     doc.build(elements)
