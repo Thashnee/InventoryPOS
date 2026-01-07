@@ -247,7 +247,7 @@ def generate_invoice(id):
     # Company Details
     COMPANY_NAME = "C.V. JOINT MAC"
     TAGLINE = "Specialising in * Sales * Service * Repairs<br/>& Reconditioning to all make of C.V. Joints"
-    ADDRESS_LINE1 = "Shop 10, Peters Road"
+    ADDRESS_LINE1 = "1 Peter Road, Shop 10"
     ADDRESS_LINE2 = "Springfield Park"
     EMAIL = "cvjointmac@gmail.com"
     TEL = "(031) 577 6049"
