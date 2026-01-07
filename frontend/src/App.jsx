@@ -3,6 +3,246 @@ import { useState, useEffect } from 'react';
 const API_URL = '/api';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [products, setProducts] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/check`, { credentials: 'include' });
+      const data = await res.json();
+      setIsAuthenticated(data.authenticated);
+    } catch (err) {
+      console.error('Auth check failed:', err);
+      setIsAuthenticated(false);
+    }
+    setIsLoading(false);
+  };
+
+  const handleLogin = async (username, password) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (res.ok) {
+        setIsAuthenticated(true);
+        return { success: true };
+      } else {
+        const data = await res.json();
+        return { success: false, error: data.error || 'Login failed' };
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      return { success: false, error: 'Connection error' };
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setIsAuthenticated(false);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#f5f5f5'
+      }}>
+        <div style={{ fontSize: '1.5rem', color: '#667eea' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  return <MainApp onLogout={handleLogout} />;
+}
+
+function LoginPage({ onLogin }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const result = await onLogin(username, password);
+    
+    if (!result.success) {
+      setError(result.error);
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        padding: '3rem',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
+        <h1 style={{ 
+          textAlign: 'center', 
+          marginBottom: '0.5rem',
+          color: '#333',
+          fontSize: '2rem'
+        }}>
+          📦 C.V. JOINT MAC
+        </h1>
+        <p style={{ 
+          textAlign: 'center', 
+          color: '#666',
+          marginBottom: '2rem',
+          fontSize: '0.875rem'
+        }}>
+          Inventory & POS System
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.5rem',
+              color: '#333',
+              fontWeight: '600'
+            }}>
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '0.875rem',
+                border: '2px solid #e0e0e0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.5rem',
+              color: '#333',
+              fontWeight: '600'
+            }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '0.875rem',
+                border: '2px solid #e0e0e0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+            />
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '0.75rem',
+              marginBottom: '1rem',
+              background: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '8px',
+              color: '#c00',
+              fontSize: '0.875rem'
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <p style={{
+          marginTop: '1.5rem',
+          textAlign: 'center',
+          fontSize: '0.75rem',
+          color: '#999'
+        }}>
+          Default: admin / admin123
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MainApp({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
@@ -18,19 +258,19 @@ function App() {
     setLoading(true);
     try {
       if (activeTab === 'dashboard') {
-        const res = await fetch(`${API_URL}/dashboard/stats`);
+        const res = await fetch(`${API_URL}/dashboard/stats`, { credentials: 'include' });
         const data = await res.json();
         setStats(data);
       } else if (activeTab === 'inventory') {
-        const res = await fetch(`${API_URL}/products`);
+        const res = await fetch(`${API_URL}/products`, { credentials: 'include' });
         const data = await res.json();
         setProducts(data);
       } else if (activeTab === 'pos') {
-        const res = await fetch(`${API_URL}/products`);
+        const res = await fetch(`${API_URL}/products`, { credentials: 'include' });
         const data = await res.json();
         setProducts(data);
       } else if (activeTab === 'sales') {
-        const res = await fetch(`${API_URL}/sales`);
+        const res = await fetch(`${API_URL}/sales`, { credentials: 'include' });
         const data = await res.json();
         setSales(data);
       }
@@ -45,6 +285,7 @@ function App() {
       const res = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(product)
       });
       if (res.ok) {
@@ -62,6 +303,7 @@ function App() {
       const res = await fetch(`${API_URL}/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(product)
       });
       if (res.ok) {
@@ -77,7 +319,10 @@ function App() {
   const deleteProduct = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     try {
-      const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/products/${id}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      });
       if (res.ok) {
         loadData();
         alert('Product deleted successfully!');
@@ -95,7 +340,8 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/products/${id}/toggle-active`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
       });
       if (res.ok) {
         loadData();
@@ -110,6 +356,7 @@ function App() {
       const res = await fetch(`${API_URL}/sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(saleData)
       });
       if (res.ok) {
@@ -127,7 +374,7 @@ function App() {
 
   const downloadInvoice = async (saleId) => {
     try {
-      const res = await fetch(`${API_URL}/sales/${saleId}/invoice`);
+      const res = await fetch(`${API_URL}/sales/${saleId}/invoice`, { credentials: 'include' });
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -145,11 +392,29 @@ function App() {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         padding: '1rem 2rem',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 'bold' }}>
           📦 Inventory & POS System
         </h1>
+        <button
+          onClick={onLogout}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid white',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '600'
+          }}
+        >
+          Logout
+        </button>
       </nav>
 
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)' }}>
