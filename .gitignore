@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.env.production
 
 # IDE
 .vscode/
@@ -27,3 +28,7 @@ postgres_data/
 
 # Docker
 docker-compose.override.yml
+
+# Backups
+*.sql
+backup_*.sql
