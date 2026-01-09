@@ -1,0 +1,45 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: inventory-db
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.db
+    envVars:
+      - key: POSTGRES_DB
+        value: inventory_db
+      - key: POSTGRES_USER
+        value: inventory_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # Backend API
+  - type: web
+    name: inventory-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEFAULT_PASSWORD
+        value: ChangeThisPassword123
+      - key: FLASK_ENV
+        value: production
+
+  # Frontend
+  - type: web
+    name: inventory-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: API_URL
+        fromService:
+          type: web
+          name: inventory-backend
+          property: host
