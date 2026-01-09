@@ -13,12 +13,23 @@ from reportlab.lib.units import inch
 import os
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+
+# CORS configuration - allow credentials and specific origins
+cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, 
+     supports_credentials=True,
+     origins=cors_origins,
+     allow_headers=['Content-Type', 'Authorization'],
+     expose_headers=['Content-Type'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://inventory_user:inventory_pass@localhost:5432/inventory_db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'None' if os.getenv('FLASK_ENV') == 'production' else 'Lax'
 
 db.init_app(app)
 bcrypt = Bcrypt(app)
@@ -247,7 +258,7 @@ def generate_invoice(id):
     # Company Details
     COMPANY_NAME = "C.V. JOINT MAC"
     TAGLINE = "Specialising in * Sales * Service * Repairs<br/>& Reconditioning to all make of C.V. Joints"
-    ADDRESS_LINE1 = "1 Peter Road, Shop 10"
+    ADDRESS_LINE1 = "Shop 10, Peters Road"
     ADDRESS_LINE2 = "Springfield Park"
     EMAIL = "cvjointmac@gmail.com"
     TEL = "(031) 577 6049"
@@ -273,7 +284,7 @@ def generate_invoice(id):
     try:
         from reportlab.platypus import Image
         import os
-        logo_path = os.path.join(os.path.dirname(__file__), 'cv-joint-logo.jpg')
+        logo_path = os.path.join(os.path.dirname(__file__), 'cv-joint-logo.png')
         if os.path.exists(logo_path):
             logo = Image(logo_path, width=3*inch, height=0.75*inch)
             logo.hAlign = 'CENTER'

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = '/api';
+// Use environment variable for API URL, fallback to local development
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -229,14 +230,14 @@ function LoginPage({ onLogin }) {
           </button>
         </form>
 
-{/*         <p style={{
+        <p style={{
           marginTop: '1.5rem',
           textAlign: 'center',
           fontSize: '0.75rem',
           color: '#999'
         }}>
           Default: admin / admin123
-        </p> */}
+        </p>
       </div>
     </div>
   );
