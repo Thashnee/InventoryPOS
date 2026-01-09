@@ -284,7 +284,7 @@ def generate_invoice(id):
     try:
         from reportlab.platypus import Image
         import os
-        logo_path = os.path.join(os.path.dirname(__file__), 'cv-joint-logo.png')
+        logo_path = os.path.join(os.path.dirname(__file__), 'cv-joint-logo.jpg')
         if os.path.exists(logo_path):
             logo = Image(logo_path, width=3*inch, height=0.75*inch)
             logo.hAlign = 'CENTER'
