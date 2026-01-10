@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-// Use environment variable for API URL, fallback to local development
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Use runtime configuration from config.js
+const API_URL = window.ENV?.API_URL || '/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
