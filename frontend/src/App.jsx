@@ -855,6 +855,10 @@ function POS({ products, cart, setCart, onComplete }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [tax, setTax] = useState(0);
+  const [vehicleMake, setVehicleMake] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [vehicleRegistration, setVehicleRegistration] = useState('');
+  const [vehicleMileage, setVehicleMileage] = useState('');
 
   const addToCart = (product) => {
     const existing = cart.find(item => item.product_id === product.id);
@@ -895,6 +899,10 @@ function POS({ products, cart, setCart, onComplete }) {
 
     const saleData = {
       customer_name: customerName,
+      vehicle_make: vehicleMake,
+      vehicle_model: vehicleModel,
+      vehicle_registration: vehicleRegistration,
+      vehicle_mileage: vehicleMileage,
       items: cart,
       discount: 0,
       tax,
@@ -904,6 +912,10 @@ function POS({ products, cart, setCart, onComplete }) {
     const sale = await onComplete(saleData);
     if (sale) {
       setCustomerName('');
+      setVehicleMake('');
+      setVehicleModel('');
+      setVehicleRegistration('');
+      setVehicleMileage('');
       setTax(0);
     }
   };
@@ -1040,8 +1052,47 @@ function POS({ products, cart, setCart, onComplete }) {
             placeholder="Customer name (optional)"
             value={customerName}
             onChange={e => setCustomerName(e.target.value)}
-            style={{...inputStyle, width: '100%', marginBottom: '1rem'}}
+            style={{...inputStyle, width: '100%', marginBottom: '0.5rem'}}
           />
+          
+          <div style={{ 
+            background: '#f9f9f9', 
+            padding: '1rem', 
+            borderRadius: '8px',
+            marginBottom: '1rem'
+          }}>
+            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+              Vehicle Details
+            </h4>
+            <input
+              type="text"
+              placeholder="Make"
+              value={vehicleMake}
+              onChange={e => setVehicleMake(e.target.value)}
+              style={{...inputStyle, width: '100%', marginBottom: '0.5rem'}}
+            />
+            <input
+              type="text"
+              placeholder="Model"
+              value={vehicleModel}
+              onChange={e => setVehicleModel(e.target.value)}
+              style={{...inputStyle, width: '100%', marginBottom: '0.5rem'}}
+            />
+            <input
+              type="text"
+              placeholder="Registration (e.g., ABC123GP)"
+              value={vehicleRegistration}
+              onChange={e => setVehicleRegistration(e.target.value)}
+              style={{...inputStyle, width: '100%', marginBottom: '0.5rem'}}
+            />
+            <input
+              type="text"
+              placeholder="Mileage (e.g., 50000km)"
+              value={vehicleMileage}
+              onChange={e => setVehicleMileage(e.target.value)}
+              style={{...inputStyle, width: '100%'}}
+            />
+          </div>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
@@ -1103,13 +1154,63 @@ function POS({ products, cart, setCart, onComplete }) {
 }
 
 function Sales({ sales, onDownload }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredSales, setFilteredSales] = useState(sales);
+
+  useEffect(() => {
+    setFilteredSales(sales);
+  }, [sales]);
+
+  const handleSearch = (term) => {
+    if (!term.trim()) {
+      setFilteredSales(sales);
+      return;
+    }
+    
+    const search = term.toLowerCase();
+    const filtered = sales.filter(sale => {
+      return (
+        (sale.customer_name && sale.customer_name.toLowerCase().includes(search)) ||
+        (sale.vehicle_registration && sale.vehicle_registration.toLowerCase().includes(search)) ||
+        (sale.invoice_number && sale.invoice_number.toLowerCase().includes(search))
+      );
+    });
+    setFilteredSales(filtered);
+  };
+
   return (
     <div>
       <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem' }}>Sales History</h2>
 
+      {/* Search Bar */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <input
+          type="text"
+          placeholder="🔍 Search by customer name, registration, or invoice number..."
+          value={searchTerm}
+          onChange={e => {
+            setSearchTerm(e.target.value);
+            handleSearch(e.target.value);
+          }}
+          style={{
+            ...inputStyle,
+            width: '100%',
+            fontSize: '1rem',
+            padding: '0.875rem 1rem'
+          }}
+        />
+        {searchTerm && (
+          <div style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.875rem' }}>
+            Found {filteredSales.length} sale{filteredSales.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+
       <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        {sales.length === 0 ? (
-          <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No sales yet</p>
+        {filteredSales.length === 0 ? (
+          <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>
+            {searchTerm ? `No sales found matching "${searchTerm}"` : 'No sales yet'}
+          </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1117,6 +1218,7 @@ function Sales({ sales, onDownload }) {
                 <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Invoice</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Customer</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left' }}>Vehicle Reg</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Payment</th>
                   <th style={{ padding: '0.75rem', textAlign: 'right' }}>Total</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left' }}>Date</th>
@@ -1124,10 +1226,13 @@ function Sales({ sales, onDownload }) {
                 </tr>
               </thead>
               <tbody>
-                {sales.map(sale => (
+                {filteredSales.map(sale => (
                   <tr key={sale.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ padding: '0.75rem', fontWeight: '600' }}>{sale.invoice_number}</td>
                     <td style={{ padding: '0.75rem' }}>{sale.customer_name || 'Walk-in'}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      {sale.vehicle_registration || '-'}
+                    </td>
                     <td style={{ padding: '0.75rem' }}>{sale.payment_method}</td>
                     <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600' }}>
                       R {sale.total.toFixed(2)}

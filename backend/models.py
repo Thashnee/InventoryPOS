@@ -60,6 +60,10 @@ class Sale(db.Model):
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     customer_name = db.Column(db.String(200))
     customer_email = db.Column(db.String(200))
+    vehicle_make = db.Column(db.String(100))
+    vehicle_model = db.Column(db.String(100))
+    vehicle_registration = db.Column(db.String(50))
+    vehicle_mileage = db.Column(db.String(50))
     total = db.Column(db.Numeric(10, 2), nullable=False)
     tax = db.Column(db.Numeric(10, 2), default=0)
     discount = db.Column(db.Numeric(10, 2), default=0)
@@ -75,6 +79,10 @@ class Sale(db.Model):
             'invoice_number': self.invoice_number,
             'customer_name': self.customer_name,
             'customer_email': self.customer_email,
+            'vehicle_make': self.vehicle_make,
+            'vehicle_model': self.vehicle_model,
+            'vehicle_registration': self.vehicle_registration,
+            'vehicle_mileage': self.vehicle_mileage,
             'total': float(self.total),
             'tax': float(self.tax),
             'discount': float(self.discount),

@@ -174,7 +174,21 @@ def toggle_product_active(id):
 @app.route('/api/sales', methods=['GET'])
 @login_required
 def get_sales():
-    sales = Sale.query.order_by(Sale.created_at.desc()).all()
+    # Get search parameter
+    search = request.args.get('search', '').strip()
+    
+    if search:
+        # Search by customer name or vehicle registration
+        sales = Sale.query.filter(
+            db.or_(
+                Sale.customer_name.ilike(f'%{search}%'),
+                Sale.vehicle_registration.ilike(f'%{search}%'),
+                Sale.invoice_number.ilike(f'%{search}%')
+            )
+        ).order_by(Sale.created_at.desc()).all()
+    else:
+        sales = Sale.query.order_by(Sale.created_at.desc()).all()
+    
     return jsonify([s.to_dict() for s in sales])
 
 @app.route('/api/sales/<int:id>', methods=['GET'])
@@ -203,6 +217,10 @@ def create_sale():
         invoice_number=invoice_num,
         customer_name=data.get('customer_name', ''),
         customer_email=data.get('customer_email', ''),
+        vehicle_make=data.get('vehicle_make', ''),
+        vehicle_model=data.get('vehicle_model', ''),
+        vehicle_registration=data.get('vehicle_registration', ''),
+        vehicle_mileage=data.get('vehicle_mileage', ''),
         total=total,
         tax=tax,
         discount=discount,
